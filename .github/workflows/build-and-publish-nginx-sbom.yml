@@ -25,7 +25,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: yewnorosen/nginx-rkvst:latest
 
-  generate-sboms:
+  generate-sbom:
     name: Generate SBOMs
     needs: build-and-publish-images
     runs-on: ubuntu-latest
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v2
-      - uses: leflambeur/rkvst-sbom@v0.0.3
+      - uses: leflambeur/rkvst-sbom@v0.0.4
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
@@ -49,3 +49,25 @@ jobs:
           command: release
           asset_id: assets/f98c67d6-2b96-46a5-bcfe-575a75f13d67
           attachments: '["yewnorosen-nginx-rkvst_latest.cyclonedx/yewnorosen-nginx-rkvst_latest.cyclonedx"]'
+
+  generate-and-publish-vulnerability-report:
+    name: Scan SBOM for known Vulnerabilities
+    needs: generate-sboms
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+      - name: Install Grype
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+      - name: Run Grype
+        run: grype yewnorosen/nginx-rkvst:latest -o cyclonedx > nginx-rkvst_latest_vuln_report.cyclonedx
+      - uses: leflambeur/rkvst-sbom@v0.0.4
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        with:
+          command: vuln_disclosure
+          asset_id: assets/f98c67d6-2b96-46a5-bcfe-575a75f13d67
+          attrs: '{"component": "${{ github.repository }}", "description": "${{ github.event.release.tag_name }} Vulnerability Report - ${{ github.repository }}", "target_version": "${{ github.event.release.tag_name }}", "author": "${{ github.actor }}"}'
+          latest_sbom: {}
+          attachments: '["nginx-rkvst_latest_vuln_report.cyclonedx"]'
+
