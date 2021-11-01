@@ -26,7 +26,7 @@ jobs:
           tags: yewnorosen/nginx-rkvst:latest
 
   generate-sbom:
-    name: Generate SBOMs
+    name: Generate SBOM
     needs: build-and-publish-images
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +37,7 @@ jobs:
 
   publish-sbom:
     name: Publish SBOM to RKVST
-    needs: generate-sboms
+    needs: generate-sbom
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v2
@@ -52,7 +52,7 @@ jobs:
 
   generate-and-publish-vulnerability-report:
     name: Scan SBOM for known Vulnerabilities
-    needs: generate-sboms
+    needs: generate-sbom
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v2
