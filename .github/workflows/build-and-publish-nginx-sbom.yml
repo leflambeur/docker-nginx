@@ -1,0 +1,62 @@
+name: Build and publish nginx-rkvst image
+on:
+  release:
+    types: ['published']
+
+jobs:
+  build-and-publish-images:
+    name: Build and publish bbench image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: yewnorosen
+          password: ${{ secrets.YEWNOROSEN_DOCKERHUB_PUSH }}
+      - name: checkout master
+        uses: actions/checkout@v2
+        with:
+          path: master
+      - name: Extract tags, labels for image
+        id: nginx-rkvst
+        uses: docker/metadata-action@v3
+        with:
+          images: yewnorosen/nginx-rkvst
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Build and push nginx-rkvst
+        uses: docker/build-push-action@v2
+        with:
+          context: master/mainline/alpine
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.ngninx-rkvst.outputs.tags }}
+          labels: ${{ steps.nginx-rkvst.outputs.labels }}
+
+  generate-sboms:
+    name: Generate SBOMs
+    needs: build-and-publish-images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anchore/sbom-action@v0.3.0
+        with:
+          image: yewnorosen/nginx-rkvst:master
+          format: cyclonedx
+
+  publish-sbom:
+    name: Publish SBOM to RKVST
+    needs: generate-sboms
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+      - uses: leflambeur/rkvst-sbom@v0.0.3
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        with:
+          command: release
+          asset_id: assets/f98c67d6-2b96-46a5-bcfe-575a75f13d67
+          attachments: '["yewnorosen-nginx-rkvst_master.cyclonedx/yewnorosen-nginx-rkvst_master.cyclonedx"]'
