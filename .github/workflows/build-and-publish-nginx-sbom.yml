@@ -65,7 +65,7 @@ jobs:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         with:
-          command: vuln_disclosure
+          command: vuln_report
           asset_id: assets/f98c67d6-2b96-46a5-bcfe-575a75f13d67
           attrs: '{"component": "${{ github.repository }}", "description": "${{ github.event.release.tag_name }} Vulnerability Report - ${{ github.repository }}", "target_version": "${{ github.event.release.tag_name }}", "author": "${{ github.actor }}"}'
           latest_sbom: '{}'
