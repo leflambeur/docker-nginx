@@ -52,7 +52,7 @@ jobs:
 
   generate-and-publish-vulnerability-report:
     name: Scan SBOM for known Vulnerabilities
-    needs: generate-sbom
+    needs: publish-sbom
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v2
